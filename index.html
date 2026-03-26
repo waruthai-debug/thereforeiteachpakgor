@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXCLUSIVE MOCK TEST - วิชาภาษาอังกฤษ ภาค ก</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* ซ่อน Scrollbar แถบตัวเลข แต่ยังเลื่อนได้ */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* สไตล์สำหรับ Scrollbar ในกล่องบทอ่าน (Reading) ให้ดูสะอาดตา */
+        .reading-box::-webkit-scrollbar { width: 8px; }
+        .reading-box::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .reading-box::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .reading-box::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Animation สำหรับข้อที่กำลังทำอยู่ */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; border-color: #f59e0b; }
+            50% { opacity: 0.6; border-color: #f3f4f6; }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        /* ลายน้ำ Watermark */
+        .watermark {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0.03;
+        }
+        .watermark h1 {
+            text-align: center; font-size: 3rem; font-weight: 900;
+            color: #1e40af; transform: rotate(-45deg);
+            white-space: nowrap; line-height: 5rem;
+        }
+        @media (min-width: 768px) { .watermark h1 { font-size: 5rem; line-height: 8rem; } }
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#1e40af', dark: '#1e3a8a', darker: '#172554' }, /* โทนสีน้ำเงิน Navy */
+                        accent: { DEFAULT: '#f59e0b', light: '#fbbf24' } /* โทนสีเหลืองทอง Amber */
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-sans antialiased text-gray-900 selection:bg-primary selection:text-white bg-gray-50">
+
+    <div class="watermark">
+        <h1>คอร์สพิชิตภาษาอังกฤษ ภาค ก<br>by ฉันจึงมาสอน ติวภาษาอังกฤษ with T.Ford</h1>
+    </div>
+
+    <div id="app" class="relative z-10"></div>
+
+    <script src="data.js"></script>
+    
+    <script>
+        // --- CONFIGURATION ---
+        const PASSWORD = "mocktest2569";
+        const YEARS = ["2565", "2566", "2567", "2568"];
+
+        const MODES = {
+            full: { id: 'full', name: 'ฉบับเต็ม เสมือนจริง', timeLimit: 60 * 60, desc: '50 ข้อ / 1 ชม.' },
+            mini: { id: 'mini', name: 'ระดับทดสอบ', timeLimit: 30 * 60, desc: '25 ข้อ / 30 นาที' }
+        };
+
+        const PARTS = [
+            { id: 'conversation', name: 'Conversation', fullName: 'Conversation (บทสนทนา)' },
+            { id: 'vocab', name: 'Vocab', fullName: 'Vocabulary (คำศัพท์และป้ายประกาศ)' },
+            { id: 'grammar', name: 'Grammar', fullName: 'Grammar & Structure (ไวยากรณ์)' },
+            { id: 'reading', name: 'Reading', fullName: 'Reading Comprehension (การอ่าน)' }
+        ];
+
+        const COURSE_MAPPING = {
+            conversation: "ฝึกฝนรูปประโยคและสำนวนในสถานการณ์ต่างๆ",
+            vocab: "ท่องจำคำศัพท์พื้นฐาน และการตีความหมายของป้าย",
+            grammar: "ทบทวนโครงสร้าง Tense, If-clause และไวยากรณ์หลัก",
+            reading: "ฝึกทักษะการอ่านจับใจความ (Skimming & Scanning)"
+        };
+
+        // --- STATE MANAGEMENT ---
+        const state = {
+            screen: 'home', 
+            selectedMode: null,
+            selectedYear: null,
+            testQuestions: [],
+            answers: {}, 
+            currentQuestionIndex: 0,
+            timeRemaining: 0,
+            isTimeUp: false,
+            showLockModal: false,
+            showSubmitModal: false,
+            showExitModal: false,
+            showReviewScreen: false,
+            passwordInput: '',
+            passwordError: '',
+            pendingSelection: null 
+        };
+
+        let timerInterval = null;
+
+        // --- UTILS ---
+        const formatTime = (seconds) => {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        };
+
+        const isLocked = (modeId, year) => {
+            if (modeId === 'full') return true; 
+            if (modeId === 'mini') return false; 
+            return false;
+        };
+
+        // --- HIGHLIGHTER ---
+        const renderHighlightedText = (text, currentQuestionContext = null) => {
+            if (!text) return '';
+            const parts = text.split(/(___|\(\d{1,3}\)|<u>.*?<\/u>)/g);
+            return parts.map(part => {
+                if (!part) return '';
+                if (part.startsWith('<u>') && part.endsWith('</u>')) {
+                    const innerText = part.slice(3, -4);
+                    return `<span class="underline decoration-primary decoration-[3px] underline-offset-4 font-extrabold mx-1 text-gray-900">${innerText}</span>`;
+                }
+                if (part === '___' || /^\(\d{1,3}\)$/.test(part)) {
+                    let isCurrentTarget = false;
+                    if (currentQuestionContext) {
+                        const qIdNum = currentQuestionContext.id.split('_')[1]; 
+                        if (part === '___') {
+                            if (!currentQuestionContext.question.includes('(')) isCurrentTarget = true;
+                        } else {
+                            const blankNum = part.match(/\d+/)[0]; 
+                            if (qIdNum === blankNum || currentQuestionContext.question.includes(`(${blankNum})`)) {
+                                isCurrentTarget = true;
+                            }
+                        }
+                    }
+                    if (isCurrentTarget) {
+                        return `<span class="bg-yellow-200 text-primary font-extrabold px-3 py-1 rounded shadow-md mx-1 tracking-widest inline-block border-b-4 border-primary animate-pulse">${part}</span>`;
+                    } else {
+                        return `<span class="font-bold text-gray-400 mx-1">${part}</span>`;
+                    }
+                }
+                return part.split('\n').join('<div class="h-2"></div>');
+            }).join('');
+        };
+
+        const scrollToCurrentQuestion = (idx) => {
+            setTimeout(() => {
+                const container = document.getElementById('scroll-container');
+                const btn = document.querySelector(`button[data-index="${idx}"]`);
+                if (container && btn) {
+                    const scrollLeft = btn.offsetLeft - (container.clientWidth / 2) + (btn.clientWidth / 2);
+                    container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                }
+            }, 50);
+        };
+
+        const tagFixedSubsets = (questions, miniCount = 25) => {
+            const getSubset = (targetCount, allQs) => {
+                if (allQs.length <= targetCount) return [...allQs];
+                const grouped = {};
+                PARTS.forEach(p => grouped[p.id] = []);
+                allQs.forEach(q => { if(grouped[q.part]) grouped[q.part].push(q); });
+                
+                let result = [];
+                let count = 0;
+                let index = 0;
+                
+                while(count < targetCount) {
+                    let addedInRound = false;
+                    for (const part of PARTS) {
+                        if (grouped[part.id][index]) {
+                            result.push(grouped[part.id][index]);
+                            count++;
+                            addedInRound = true;
+                            if (count >= targetCount) break;
+                        }
+                    }
+                    if (!addedInRound) break; 
+                    index++;
+                }
+                return result;
+            };
+
+            const miniSet = getSubset(miniCount, questions);
+
+            return questions.map(q => ({
+                ...q,
+                inMiniSet: miniSet.some(mq => mq.id === q.id)
+            }));
+        };
+
+        // --- ACTIONS ---
+        const handleSelectTest = (modeId, year) => {
+            if (isLocked(modeId, year)) {
+                state.pendingSelection = { modeId, year };
+                state.passwordInput = '';
+                state.passwordError = '';
+                state.showLockModal = true;
+            } else {
+                startTest(modeId, year);
+            }
+            renderApp();
+        };
+
+        const submitPassword = () => {
+            if (state.passwordInput === PASSWORD) {
+                state.showLockModal = false;
+                startTest(state.pendingSelection.modeId, state.pendingSelection.year);
+            } else {
+                state.passwordError = 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
+                renderApp();
+            }
+        };
+
+        const startTest = (modeId, year) => {
+            state.selectedMode = MODES[modeId];
+            state.selectedYear = year;
+            
+            if(!window.EXAM_DATABASE || !window.EXAM_DATABASE[year]) {
+                alert(`กำลังปรับปรุงฐานข้อมูลปี ${year}`);
+                return;
+            }
+            
+            const fullSet = window.EXAM_DATABASE[year];
+            let finalQuestions = [];
+            if (modeId === 'full') finalQuestions = fullSet;
+            else if (modeId === 'mini') finalQuestions = fullSet.filter(q => q.inMiniSet);
+
+            const partOrder = PARTS.map(p => p.id);
+            finalQuestions.sort((a, b) => partOrder.indexOf(a.part) - partOrder.indexOf(b.part));
+
+            state.testQuestions = finalQuestions;
+            state.answers = {};
+            state.currentQuestionIndex = 0;
+            state.timeRemaining = MODES[modeId].timeLimit;
+            state.isTimeUp = false;
+            state.showSubmitModal = false;
+            state.showExitModal = false;
+            state.showReviewScreen = false;
+            state.screen = 'test';
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (state.timeRemaining > 0) {
+                    state.timeRemaining--;
+                    const timerEl = document.getElementById('timer-display');
+                    if (timerEl) {
+                        timerEl.innerHTML = `<i data-lucide="clock" class="w-5 h-5 inline-block align-text-bottom"></i> ${formatTime(state.timeRemaining)}`;
+                        lucide.createIcons({root: timerEl});
+                    }
+                } else {
+                    state.isTimeUp = true;
+                    clearInterval(timerInterval);
+                    renderApp(); 
+                }
+            }, 1000);
+
+            window.scrollTo(0,0);
+            renderApp();
+        };
+
+        const handleAnswer = (optionId) => {
+            state.answers[state.testQuestions[state.currentQuestionIndex].id] = optionId;
+            renderApp();
+        };
+
+        const setCurrentQuestionIndex = (idx) => {
+            state.currentQuestionIndex = Math.max(0, Math.min(state.testQuestions.length - 1, idx));
+            renderApp();
+            scrollToCurrentQuestion(state.currentQuestionIndex);
+        };
+
+        const toggleModal = (modalName, val) => {
+            state[modalName] = val;
+            renderApp();
+        };
+
+        const setPasswordInput = (val) => { state.passwordInput = val; }
+        const handleKeyDown = (e) => { if(e.key === 'Enter') submitPassword(); }
+
+        const submitTestFinal = () => {
+            state.showSubmitModal = false;
+            state.screen = 'result';
+            clearInterval(timerInterval);
+            window.scrollTo(0,0);
+            renderApp();
+        };
+
+        // --- VIEWS RENDERING ---
+        
+        const renderHome = () => {
+            let html = `
+            <div class="min-h-screen flex flex-col items-center py-10 px-4">
+                <div class="bg-white p-8 rounded-xl shadow-2xl max-w-5xl w-full border-t-8 border-primary relative">
+                    <div class="text-center mb-10">
+                        <div class="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg text-white">
+                            <i data-lucide="graduation-cap" class="w-10 h-10"></i>
+                        </div>
+                        <h1 class="text-3xl md:text-5xl font-black text-primary mb-2 tracking-tight">Exclusive Mocktest ภาค ก</h1>
+                        <p class="text-lg md:text-xl text-gray-600 font-bold">คอร์สพิชิตภาษาอังกฤษ ภาค ก by ฉันจึงมาสอน</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            `;
+            
+            YEARS.forEach(year => {
+                html += `
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-center gap-3 mb-6 border-b pb-4">
+                        <i data-lucide="calendar" class="text-primary w-6 h-6"></i>
+                        <h2 class="text-2xl font-black text-gray-800">ข้อสอบปี ${year}</h2>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                `;
+                Object.values(MODES).forEach(mode => {
+                    const locked = isLocked(mode.id, year);
+                    const icon = locked ? '<i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>' : '<i data-lucide="play-circle" class="w-5 h-5 text-green-600"></i>';
+                    html += `
+                    <button onclick="handleSelectTest('${mode.id}', '${year}')" class="flex items-center justify-between p-4 rounded-lg bg-white hover:border-accent hover:ring-1 ring-accent transition group border border-gray-200 shadow-sm text-left">
+                        <div>
+                            <div class="font-bold text-gray-800 text-lg mb-1">${mode.name}</div>
+                            <div class="text-sm text-gray-500">${mode.desc}</div>
+                        </div>
+                        ${icon}
+                    </button>`;
+                });
+                html += `</div></div>`;
+            });
+
+            html += `</div></div></div>`;
+
+            if (state.showLockModal) {
+                html += `
+                <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full border-t-4 border-primary">
+                        <div class="text-center mb-6">
+                            <i data-lucide="lock" class="w-12 h-12 mx-auto text-primary mb-2"></i>
+                            <h3 class="text-2xl font-black text-gray-800">โหมดนี้ถูกล็อค</h3>
+                            <p class="text-gray-500 text-sm mt-2">ชุดข้อสอบนี้สงวนสิทธิ์สำหรับผู้เรียนคอร์สติวเท่านั้น กรุณาใส่รหัสผ่านเพื่อเข้าสอบ</p>
+                        </div>
+                        <input type="password" value="${state.passwordInput}" oninput="setPasswordInput(this.value)" onkeydown="handleKeyDown(event)" class="w-full border-2 border-gray-200 p-3 rounded-lg mb-2 focus:outline-none focus:border-primary transition" placeholder="ใส่รหัสผ่านที่นี่...">
+                        ${state.passwordError ? `<p class="text-red-500 text-sm mb-4 font-bold"><i data-lucide="alert-circle" class="w-4 h-4 inline align-text-bottom"></i> ${state.passwordError}</p>` : '<div class="h-6"></div>'}
+                        <div class="flex justify-end gap-3 mt-2">
+                            <button onclick="toggleModal('showLockModal', false)" class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-bold">ยกเลิก</button>
+                            <button onclick="submitPassword()" class="px-6 py-2.5 bg-primary text-white rounded-lg font-bold hover:bg-primary-dark shadow-md">ยืนยัน</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+            return html;
+        };
+
+        const renderTest = () => {
+            const q = state.testQuestions[state.currentQuestionIndex];
+            const isLast = state.currentQuestionIndex === state.testQuestions.length - 1;
+            const isFirst = state.currentQuestionIndex === 0;
+            const partInfo = PARTS.find(p => p.id === q.part) || { name: q.part };
+            const answeredCount = Object.keys(state.answers).length;
+
+            let passageText = "";
+            let actualQuestion = q.question;
+            
+            if (q.question.includes('\n\n')) {
+                const splitIndex = q.question.lastIndexOf('\n\n');
+                passageText = q.question.substring(0, splitIndex).trim();
+                actualQuestion = q.question.substring(splitIndex + 2).trim();
+            }
+
+            const hasPassage = passageText.length > 0;
+            const mainMaxWidth = hasPassage ? 'max-w-7xl' : 'max-w-4xl'; 
+
+            let html = `
+            <div class="min-h-screen flex flex-col bg-gray-50 pb-20">
+                <header class="bg-primary text-white p-3 md:p-4 shadow-md sticky top-0 z-20">
+                    <div class="max-w-7xl mx-auto flex justify-between items-center px-2">
+                        <div>
+                            <div class="font-bold text-lg md:text-xl">ปี ${state.selectedYear} <span class="text-accent">| ${state.selectedMode.name}</span></div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div id="timer-display" class="font-mono font-bold text-lg md:text-xl bg-black/20 px-3 py-1 rounded-lg ${state.timeRemaining < 300 ? 'text-red-300 animate-pulse' : ''}">
+                                <i data-lucide="clock" class="w-5 h-5 inline-block align-text-bottom"></i> ${formatTime(state.timeRemaining)}
+                            </div>
+                            <button onclick="toggleModal('showExitModal', true)" class="p-2 hover:bg-white/20 rounded-full transition" title="ออกจากการสอบ">
+                                <i data-lucide="x" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="bg-white border-b shadow-sm sticky top-[68px] md:top-[76px] z-10">
+                    <div class="max-w-7xl mx-auto px-4 py-3">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-sm font-bold text-gray-500">ข้อที่ ${state.currentQuestionIndex + 1} / ${state.testQuestions.length}</span>
+                            <span class="text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded">ทำแล้ว ${answeredCount} ข้อ</span>
+                        </div>
+                        <div id="scroll-container" class="flex gap-2 overflow-x-auto scrollbar-hide py-1 scroll-smooth">
+                            ${state.testQuestions.map((tq, i) => {
+                                const isAns = !!state.answers[tq.id];
+                                const isCur = i === state.currentQuestionIndex;
+                                let btnClass = "min-w-[40px] h-10 rounded-lg font-bold text-sm flex items-center justify-center flex-shrink-0 transition-all ";
+                                if (isCur) btnClass += "bg-primary text-white ring-2 ring-accent ring-offset-1 scale-110 shadow-md ";
+                                else if (isAns) btnClass += "bg-blue-100 text-blue-800 border border-blue-300 ";
+                                else btnClass += "bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200 ";
+                                return `<button data-index="${i}" onclick="setCurrentQuestionIndex(${i})" class="${btnClass}">${i + 1}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <main class="flex-grow ${mainMaxWidth} mx-auto w-full p-4 flex flex-col mt-4">`;
+
+            if (hasPassage) {
+                html += `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[40vh] lg:h-auto lg:min-h-[60vh]">
+                        <div class="bg-gray-100 px-4 py-3 border-b border-gray-200 font-bold text-gray-700 flex items-center gap-2 shadow-sm z-10">
+                            <i data-lucide="book-open" class="w-5 h-5 text-primary"></i> 
+                            <span>ข้อมูลสำหรับตอบคำถาม</span>
+                        </div>
+                        <div class="p-6 overflow-y-auto flex-grow bg-white text-gray-900 font-serif leading-loose text-lg tracking-wide whitespace-pre-wrap shadow-inner reading-box">
+                            ${renderHighlightedText(passageText, q)}
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 border-t-4 border-accent flex flex-col">
+                `;
+            } else {
+                html += `<div class="bg-white rounded-xl shadow-sm p-6 md:p-8 border-t-4 border-accent flex-grow flex flex-col">`;
+            }
+
+            html += `
+                        <div class="inline-block self-start px-3 py-1 bg-blue-50 text-primary font-black text-xs md:text-sm rounded-full mb-6 tracking-widest uppercase shadow-sm">
+                            <i data-lucide="tag" class="w-4 h-4 inline mr-1 align-text-bottom"></i> ${partInfo.name}
+                        </div>
+                        
+                        <div class="text-lg md:text-xl font-medium leading-relaxed mb-8 text-gray-800 whitespace-pre-wrap">${renderHighlightedText(actualQuestion, q)}</div>
+                        
+                        <div class="space-y-3 mt-auto">
+                            ${['a', 'b', 'c', 'd'].map(opt => {
+                                const isSelected = state.answers[q.id] === opt;
+                                return `
+                                <button onclick="handleAnswer('${opt}')" class="w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-start gap-4 ${isSelected ? 'border-primary bg-blue-50/50 shadow-inner' : 'border-gray-200 hover:border-accent hover:bg-gray-50 hover:shadow-sm'}">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-black flex-shrink-0 mt-0.5 transition-colors ${isSelected ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'}">${opt.toUpperCase()}</div>
+                                    <div class="pt-1 text-base md:text-lg font-medium text-gray-700">${q.options[opt]}</div>
+                                </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div> `;
+
+            if (hasPassage) html += `</div>`; 
+
+            html += `
+                </main>
+                <footer class="bg-white border-t p-4 fixed bottom-0 w-full z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                    <div class="max-w-7xl mx-auto flex justify-between px-2">
+                        <button onclick="setCurrentQuestionIndex(${state.currentQuestionIndex - 1})" class="px-5 py-3 md:px-6 rounded-lg font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-30 flex items-center gap-2" ${isFirst ? 'disabled' : ''}>
+                            <i data-lucide="arrow-left" class="w-5 h-5"></i> <span class="hidden md:inline">ก่อนหน้า</span>
+                        </button>
+                        
+                        ${isLast ? `
+                            <button onclick="toggleModal('showSubmitModal', true)" class="px-6 py-3 md:px-8 rounded-lg font-bold text-white bg-primary hover:bg-primary-dark shadow-lg flex items-center gap-2 transition transform hover:scale-105 ring-2 ring-offset-2 ring-primary">
+                                ส่งข้อสอบ <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        ` : `
+                            <button onclick="setCurrentQuestionIndex(${state.currentQuestionIndex + 1})" class="px-5 py-3 md:px-6 rounded-lg font-bold text-white bg-gray-800 hover:bg-gray-900 flex items-center gap-2 shadow-md">
+                                <span class="hidden md:inline">ถัดไป</span> <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            </button>
+                        `}
+                    </div>
+                </footer>
+            </div>`;
+
+            if (state.showSubmitModal) {
+                const unanswered = state.testQuestions.length - answeredCount;
+                html += `
+                <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl transform transition-all border-t-8 ${unanswered > 0 ? 'border-yellow-400' : 'border-green-500'}">
+                        <div class="w-20 h-20 ${unanswered > 0 ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600'} rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="${unanswered > 0 ? 'alert-triangle' : 'check-circle'}" class="w-10 h-10"></i>
+                        </div>
+                        <h2 class="text-2xl font-black mb-2 text-gray-800">ยืนยันการส่งข้อสอบ?</h2>
+                        ${unanswered > 0 ? `<p class="text-red-500 font-bold mb-6">คุณยังเหลือข้อที่ไม่ได้ทำอีก ${unanswered} ข้อ!</p>` : `<p class="text-green-600 font-bold mb-6">คุณทำข้อสอบครบทุกข้อแล้ว เยี่ยมมาก!</p>`}
+                        <div class="flex flex-col gap-3">
+                            <button onclick="submitTestFinal()" class="w-full py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary-dark shadow-md text-lg">ส่งข้อสอบเลย</button>
+                            <button onclick="toggleModal('showSubmitModal', false)" class="w-full py-3 rounded-lg bg-gray-100 text-gray-700 font-bold hover:bg-gray-200">กลับไปทำต่อ</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            if (state.showExitModal) {
+                html += `
+                <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl">
+                        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="x-octagon" class="w-8 h-8"></i>
+                        </div>
+                        <h2 class="text-2xl font-black mb-2 text-gray-800">หยุดการทำข้อสอบ?</h2>
+                        <p class="text-gray-500 mb-6 font-medium">ความคืบหน้าทั้งหมดจะหายไป คุณแน่ใจหรือไม่?</p>
+                        <div class="flex gap-3 justify-center">
+                            <button onclick="toggleModal('showExitModal', false)" class="flex-1 py-2.5 rounded-lg bg-gray-200 text-gray-800 font-bold hover:bg-gray-300">ทำต่อ</button>
+                            <button onclick="location.reload()" class="flex-1 py-2.5 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 shadow-md">ออก</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            return html;
+        };
+
+        const generateRadarChartSVG = (stats) => {
+            const size = 200, center = size / 2, radius = 70;
+            const angles = PARTS.map((_, i) => (Math.PI * 2 * i) / PARTS.length - Math.PI / 2);
+            const getPoint = (angle, val) => ({ x: center + radius * val * Math.cos(angle), y: center + radius * val * Math.sin(angle) });
+
+            let grids = '';
+            for (let j = 1; j <= 5; j++) {
+                const points = angles.map(a => `${getPoint(a, j*0.2).x},${getPoint(a, j*0.2).y}`).join(' ');
+                grids += `<polygon points="${points}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`;
+            }
+
+            const axes = angles.map(a => {
+                const end = getPoint(a, 1);
+                return `<line x1="${center}" y1="${center}" x2="${end.x}" y2="${end.y}" stroke="#e5e7eb" stroke-width="1"/>`;
+            }).join('');
+
+            const dataPoints = PARTS.map((p, i) => {
+                const percent = stats[p.id].total > 0 ? stats[p.id].correct / stats[p.id].total : 0;
+                return getPoint(angles[i], percent);
+            });
+            const dataStr = dataPoints.map(p => `${p.x},${p.y}`).join(' ');
+
+            const labels = PARTS.map((p, i) => {
+                const pnt = getPoint(angles[i], 1.35);
+                return `<text x="${pnt.x}" y="${pnt.y}" text-anchor="middle" dominant-baseline="middle" class="text-[10px] fill-gray-500 font-bold">${p.name}</text>`;
+            }).join('');
+
+            return `
+            <svg width="100%" height="100%" viewBox="0 0 ${size} ${size}" class="max-w-[250px] mx-auto overflow-visible">
+                ${grids}
+                ${axes}
+                <polygon points="${dataStr}" fill="rgba(245, 158, 11, 0.4)" stroke="#f59e0b" stroke-width="2"/>
+                ${dataPoints.map(p => `<circle cx="${p.x}" cy="${p.y}" r="4" fill="#1e40af"/>`).join('')}
+                ${labels}
+            </svg>`;
+        };
+
+        const renderResult = () => {
+            if(state.showReviewScreen) return renderReviewScreen(); 
+
+            let totalCorrect = 0;
+            const stats = {};
+            PARTS.forEach(p => stats[p.id] = { correct: 0, total: 0 });
+
+            state.testQuestions.forEach(q => {
+                if (stats[q.part]) {
+                    stats[q.part].total++;
+                    if (state.answers[q.id] === q.answer) {
+                        stats[q.part].correct++;
+                        totalCorrect++;
+                    }
+                }
+            });
+
+            const percent = ((totalCorrect / state.testQuestions.length) * 100).toFixed(1);
+            let feedbackMsg = "พยายามอีกนิดนะ คุณทำได้!";
+            if (percent >= 80) feedbackMsg = "ยอดเยี่ยมมาก! พื้นฐานแน่นสุดๆ";
+            else if (percent >= 60) feedbackMsg = "ทำได้ดี! มีลุ้นสอบผ่านแน่นอน";
+
+            let html = `
+            <div class="min-h-screen bg-gray-100 py-10 px-4">
+                <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border-t-8 border-accent">
+                    <div class="bg-primary p-10 text-center text-white relative overflow-hidden">
+                        <i data-lucide="award" class="w-20 h-20 mx-auto mb-4 text-accent drop-shadow-md"></i>
+                        <h1 class="text-3xl md:text-5xl font-black mb-2">สรุปผลคะแนน</h1>
+                        <p class="text-lg md:text-xl text-blue-100 font-bold">ปี ${state.selectedYear} | ${state.selectedMode.name}</p>
+                    </div>
+
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div class="flex flex-col items-center justify-center border-b md:border-b-0 md:border-r-2 border-gray-100 pb-8 md:pb-0">
+                            <div class="relative w-52 h-52 flex items-center justify-center bg-gray-50 rounded-full border-[12px] ${percent >= 60 ? 'border-green-500' : 'border-red-500'} shadow-inner mb-6">
+                                <div class="text-center">
+                                    <div class="text-6xl font-black text-gray-800">${totalCorrect}</div>
+                                    <div class="text-gray-400 font-black border-t-2 border-gray-200 mt-2 pt-2 text-xl">/ ${state.testQuestions.length}</div>
+                                </div>
+                            </div>
+                            <div class="text-3xl font-black text-gray-800 bg-gray-100 px-4 py-1 rounded-lg">${percent}%</div>
+                            <p class="text-primary font-bold mt-3 text-lg">${feedbackMsg}</p>
+                        </div>
+
+                        <div class="flex flex-col items-center justify-center">
+                            <h3 class="text-xl font-black text-gray-700 mb-6 bg-gray-100 px-4 py-2 rounded-lg"><i data-lucide="pie-chart" class="inline w-5 h-5 mr-1 align-text-bottom"></i> กราฟวิเคราะห์จุดแข็ง-จุดอ่อน</h3>
+                            <div class="w-full flex items-center justify-center">
+                                ${generateRadarChartSVG(stats)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-6 md:p-10 border-t border-gray-200">
+                        <h3 class="text-2xl font-black text-primary mb-6 border-b-2 border-primary pb-2 inline-block"><i data-lucide="bar-chart-2" class="inline w-6 h-6 mr-2"></i> สรุปรายพาร์ท & แนะนำเนื้อหา</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-4">
+                            ${PARTS.map(p => {
+                                const s = stats[p.id];
+                                if (s.total === 0) return '';
+                                const pct = Math.round((s.correct / s.total) * 100);
+                                const isWeak = pct < 60;
+                                return `
+                                <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 ${isWeak ? 'border-red-500' : 'border-green-500'} relative overflow-hidden">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div class="font-bold text-gray-800 text-lg leading-tight w-2/3">${p.fullName}</div>
+                                        <div class="font-black text-xl ${isWeak ? 'text-red-500' : 'text-green-500'} bg-gray-50 px-2 py-1 rounded">${s.correct}/${s.total}</div>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-3 mb-4 shadow-inner">
+                                        <div class="h-3 rounded-full ${isWeak ? 'bg-red-500' : 'bg-green-500'}" style="width: ${pct}%"></div>
+                                    </div>
+                                    ${isWeak ? `<div class="text-sm bg-red-50 border border-red-100 text-red-800 p-3 rounded-lg font-medium"><i data-lucide="book-open" class="w-4 h-4 inline align-text-bottom mr-1"></i> <b>ควรทบทวน:</b> ${COURSE_MAPPING[p.id]}</div>` : `<div class="text-sm bg-green-50 border border-green-100 text-green-800 p-3 rounded-lg font-bold"><i data-lucide="check-circle" class="w-4 h-4 inline mr-1 align-text-bottom"></i> ผ่านเกณฑ์ดีเยี่ยม!</div>`}
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <div class="p-8 flex flex-col sm:flex-row gap-4 justify-center bg-white border-t border-gray-200">
+                        <button onclick="toggleModal('showReviewScreen', true)" class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-primary bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 transition flex items-center justify-center gap-2 text-lg shadow-sm">
+                            <i data-lucide="search" class="w-6 h-6"></i> ดูเฉลยละเอียด
+                        </button>
+                        <button onclick="location.reload()" class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-white bg-gray-800 hover:bg-gray-900 shadow-md transition flex items-center justify-center gap-2 text-lg">
+                            <i data-lucide="home" class="w-6 h-6"></i> กลับหน้าแรก
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+            return html;
+        };
+
+        const renderReviewScreen = () => {
+            let html = `
+            <div class="min-h-screen bg-gray-100 pb-10">
+                <div class="bg-primary text-white p-4 shadow-lg sticky top-0 z-30 flex justify-between items-center">
+                    <div class="font-black text-xl flex items-center gap-2"><i data-lucide="check-square" class="w-6 h-6 text-accent"></i> เฉลยละเอียด (ปี ${state.selectedYear})</div>
+                    <button onclick="toggleModal('showReviewScreen', false)" class="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg font-bold transition flex items-center gap-2 text-sm">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> <span class="hidden sm:inline">กลับหน้าคะแนน</span>
+                    </button>
+                </div>
+                
+                <div class="max-w-4xl mx-auto mt-6 px-4 space-y-6">
+            `;
+
+            state.testQuestions.forEach((q, i) => {
+                const userAns = state.answers[q.id];
+                const isCorrect = userAns === q.answer;
+                
+                let passageText = "";
+                let actualQuestion = q.question;
+                if (q.question.includes('\n\n')) {
+                    const splitIndex = q.question.lastIndexOf('\n\n');
+                    passageText = q.question.substring(0, splitIndex).trim();
+                    actualQuestion = q.question.substring(splitIndex + 2).trim();
+                }
+                const hasPassage = passageText.length > 0;
+
+                html += `
+                <div class="bg-white rounded-xl shadow-md p-6 md:p-8 border-l-8 ${isCorrect ? 'border-green-500' : 'border-red-500'} relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i data-lucide="${isCorrect ? 'check-circle' : 'x-circle'}" class="w-24 h-24 ${isCorrect ? 'text-green-500' : 'text-red-500'}"></i>
+                    </div>
+                    <div class="flex items-center gap-3 mb-6 relative z-10">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-black shadow-md ${isCorrect ? 'bg-green-500' : 'bg-red-500'}">
+                            ${isCorrect ? '<i data-lucide="check" class="w-6 h-6"></i>' : '<i data-lucide="x" class="w-6 h-6"></i>'}
+                        </div>
+                        <h3 class="font-black text-xl text-gray-800">ข้อที่ ${i+1}</h3>
+                        <span class="ml-auto text-xs font-bold bg-gray-200 text-gray-600 px-3 py-1 rounded-full uppercase tracking-wider">${PARTS.find(p=>p.id===q.part)?.name || q.part}</span>
+                    </div>
+                    `;
+
+                if (hasPassage) {
+                    html += `
+                    <div class="mb-6 relative z-10 border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                        <div class="bg-gray-100 px-3 py-2 text-sm font-bold text-gray-700 border-b border-gray-200 flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-primary"></i> บทอ่านอ้างอิง</div>
+                        <div class="p-5 bg-white font-serif text-gray-900 leading-loose text-lg tracking-wide whitespace-pre-wrap">${renderHighlightedText(passageText, q)}</div>
+                    </div>`;
+                }
+                    
+                html += `
+                    <div class="text-gray-800 font-medium text-lg leading-relaxed mb-8 whitespace-pre-wrap relative z-10 bg-gray-50 p-4 rounded-lg border border-gray-100">${renderHighlightedText(actualQuestion, q)}</div>
+                    
+                    <div class="space-y-3 relative z-10">
+                `;
+
+                ['a', 'b', 'c', 'd'].forEach(opt => {
+                    const isSelected = userAns === opt;
+                    const isActualAnswer = q.answer === opt;
+                    let bgClass = "bg-white border-gray-200 text-gray-600";
+                    let icon = "";
+
+                    if (isActualAnswer) {
+                        bgClass = "bg-green-50 border-green-400 text-green-900 font-bold ring-2 ring-green-200 shadow-sm";
+                        icon = `<i data-lucide="check-circle-2" class="w-6 h-6 text-green-600 flex-shrink-0"></i>`;
+                    } else if (isSelected && !isActualAnswer) {
+                        bgClass = "bg-red-50 border-red-300 text-red-800 opacity-70";
+                        icon = `<i data-lucide="x-circle" class="w-6 h-6 text-red-500 flex-shrink-0"></i>`;
+                    }
+
+                    html += `
+                    <div class="p-4 rounded-xl border-2 flex items-center justify-between transition-colors ${bgClass}">
+                        <div class="flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shadow-sm flex-shrink-0 ${isActualAnswer ? 'bg-green-500 text-white' : (isSelected ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-500')} mt-0.5">${opt.toUpperCase()}</span>
+                            <span class="text-base ${isSelected && !isActualAnswer ? 'line-through' : ''}">${q.options[opt]}</span>
+                        </div>
+                        ${icon}
+                    </div>`;
+                });
+
+                if(!userAns) {
+                    html += `<div class="mt-4 p-3 bg-red-100 border border-red-200 rounded-lg text-sm font-bold text-red-700 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-5 h-5"></i> คุณไม่ได้เลือกคำตอบในข้อนี้</div>`;
+                }
+
+                html += `</div></div>`;
+            });
+
+            html += `
+                <div class="text-center mt-10">
+                    <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="px-6 py-3 bg-gray-800 text-white font-bold rounded-lg shadow hover:bg-gray-900 inline-flex items-center gap-2">
+                        <i data-lucide="arrow-up" class="w-5 h-5"></i> กลับขึ้นด้านบน
+                    </button>
+                </div>
+            </div></div>`;
+            return html;
+        };
+
+        const renderApp = () => {
+            const app = document.getElementById('app');
+            if (state.screen === 'home') app.innerHTML = renderHome();
+            else if (state.screen === 'test') app.innerHTML = renderTest();
+            else if (state.screen === 'result') app.innerHTML = renderResult();
+            
+            if(window.lucide) lucide.createIcons();
+            
+            if (state.screen === 'test') {
+                scrollToCurrentQuestion(state.currentQuestionIndex);
+            }
+        };
+
+        window.onload = () => {
+            if(window.EXAM_DATABASE) {
+                YEARS.forEach(y => {
+                    if(window.EXAM_DATABASE[y]) {
+                        window.EXAM_DATABASE[y] = tagFixedSubsets(window.EXAM_DATABASE[y]);
+                    }
+                });
+            }
+            renderApp();
+        };
+
+    </script>
+</body>
+</html>
