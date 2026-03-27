@@ -120,9 +120,12 @@
         };
 
         const isLocked = (modeId, year) => {
-            if (modeId === 'full') return true; 
-            if (modeId === 'mini') return false; 
-            return false;
+            // ปลดล็อคเฉพาะโหมด mini (ระดับทดสอบ) ของปี 2568 เท่านั้น
+            if (modeId === 'mini' && year === '2568') {
+                return false; 
+            }
+            // รายการอื่นๆ ล็อคทั้งหมด (ต้องใส่รหัสผ่าน)
+            return true; 
         };
 
         // --- HIGHLIGHTER ---
