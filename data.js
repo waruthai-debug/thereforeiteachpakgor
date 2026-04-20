@@ -1415,9 +1415,9 @@ window.EXAM_DATABASE["2568"] = [
     options: { a: "Better grades", b: "More motivation", c: "Less deep learning", d: "More questions" },
     answer: "c"
   }
-window.EXAM_DATABASE["2569"] = window.EXAM_DATABASE["2569"] || [];
+window.EXAM_DATABASE = window.EXAM_DATABASE || {};
 
-window.EXAM_DATABASE["2569"].push(
+window.EXAM_DATABASE["2569"] = [
   {
     id: "2569_1", 
     part: "conversation",
