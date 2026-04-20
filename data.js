@@ -1416,3 +1416,147 @@ window.EXAM_DATABASE["2568"] = [
     answer: "c"
   }
 ];
+window.EXAM_DATABASE["2569 (กรณีพิเศษ)"] = window.EXAM_DATABASE["2569 (กรณีพิเศษ)"] || [];
+
+window.EXAM_DATABASE["2569 (กรณีพิเศษ)"].push(
+  {
+    id: "2569 (กรณีพิเศษ)_1", 
+    part: "conversation",
+    question: "A: Excuse me, could you tell me the way to the bank?\nB: ________________________.",
+    options: { a: "It closes at four o’clock.", b: "Yes, I went there yesterday.", c: "Go straight and turn left at the corner.", d: "The bank is very busy today." },
+    answer: "c"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_2", 
+    part: "conversation",
+    question: "A: I’m sorry I stepped on your foot.\nB: ________________________.",
+    options: { a: "That’s all right.", b: "You should buy new shoes.", c: "My foot is under the table.", d: "I step on it every day." },
+    answer: "a"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_3", 
+    part: "conversation",
+    question: "Questions 3-4 refer to the dialogue below.\nClerk: Good afternoon. Can I help you?\nMan: Yes, I’d like to join the evening exercise class.\nClerk: All right. The class starts next Tuesday.\nMan: That sounds good. (1)\nClerk: It starts at 6:00 p.m. and ends at 7:30 p.m.\nMan: Okay. (2)\nClerk: It is 500 baht for one month.\nMan: That’s fine. I’d like to register today.\nClerk: Please fill out this form and pay at the front desk.\n\nChoose the best alternative for (1):",
+    options: { a: "What time does it start?", b: "How many desk are there?", c: "Where do you go yesterday?", d: "Who starts the Tuesday?" },
+    answer: "a"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_4", 
+    part: "conversation",
+    question: "Questions 3-4 refer to the dialogue below.\nClerk: Good afternoon. Can I help you?\nMan: Yes, I’d like to join the evening exercise class.\nClerk: All right. The class starts next Tuesday.\nMan: That sounds good. (1)\nClerk: It starts at 6:00 p.m. and ends at 7:30 p.m.\nMan: Okay. (2)\nClerk: It is 500 baht for one month.\nMan: That’s fine. I’d like to register today.\nClerk: Please fill out this form and pay at the front desk.\n\nChoose the best alternative for (2):",
+    options: { a: "How much is the class?", b: "Why are you exercise here?", c: "Is the form very long?", d: "How long pay the front desk?" },
+    answer: "a"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_5", 
+    part: "conversation",
+    question: "Situation: Tina is calling her friend, but her friend is not home. Her friend’s brother answers the phone.\nWhat should Tina say?",
+    options: { a: "Tell her to call me back, please.", b: "Where are you going now?", c: "I am her best friend yesterday.", d: "Put the phone on the table." },
+    answer: "a"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_6", 
+    part: "vocab",
+    question: "The manager will ______ the new plan at the meeting tomorrow.",
+    options: { a: "announce", b: "borrow", c: "hide", d: "travel" },
+    answer: "a"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_7", 
+    part: "vocab",
+    question: "The company’s sales ______ last month because more people bought its products.",
+    options: { a: "increased", b: "followed", c: "arrived", d: "waited" },
+    answer: "a"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_8", 
+    part: "vocab",
+    question: "The committee decided to ______ the old policy after reading the report.",
+    options: { a: "revise", b: "divide", c: "discover", d: "collect" },
+    answer: "a"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_9", 
+    part: "vocab",
+    question: "She stayed calm and kept her ______ during the discussion.",
+    options: { a: "danger", b: "composure", c: "accident", d: "argument" },
+    answer: "b"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_10", 
+    part: "vocab",
+    question: "The report was very ______, so everyone understood it easily.",
+    options: { a: "heavy", b: "lucky", c: "clear", d: "narrow" },
+    answer: "c"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_11", 
+    part: "grammar",
+    question: "By the time we got to the station, the train ______.",
+    options: { a: "left", b: "has left", c: "will leave", d: "had left" },
+    answer: "d"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_12", 
+    part: "grammar",
+    question: "He suggested ______ the meeting until Friday.",
+    options: { a: "postpone", b: "postponing", c: "to postpone", d: "postponed" },
+    answer: "b"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_13", 
+    part: "grammar",
+    question: "If she ______ harder, she would have passed the exam.",
+    options: { a: "studies", b: "studied", c: "had studied", d: "would study" },
+    answer: "c"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_14", 
+    part: "grammar",
+    question: "I am looking forward to ______ from you soon.",
+    options: { a: "hear", b: "heard", c: "to hear", d: "hearing" },
+    answer: "d"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_15", 
+    part: "grammar",
+    question: "Neither the teacher nor the students ______ ready for the trip.",
+    options: { a: "is", b: "are", c: "was", d: "has" },
+    answer: "b"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_16", 
+    part: "reading",
+    question: "Passage:\nBen went to the city park with his sister on Sunday morning. They wanted to ride bicycles and have a picnic. When they arrived, they saw a sign near the gate. It said people could not ride bicycles in the park that day because there was a flower show. Ben and his sister put the bicycles near a tree and walked around the park instead. Later, they sat by the lake and ate sandwiches.\n\nWhen did Ben go to the park?",
+    options: { a: "on Saturday morning", b: "on Sunday morning", c: "on Sunday evening", d: "on Monday afternoon" },
+    answer: "b"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_17", 
+    part: "reading",
+    question: "Passage:\nBen went to the city park with his sister on Sunday morning. They wanted to ride bicycles and have a picnic. When they arrived, they saw a sign near the gate. It said people could not ride bicycles in the park that day because there was a flower show. Ben and his sister put the bicycles near a tree and walked around the park instead. Later, they sat by the lake and ate sandwiches.\n\nWhy could Ben and his sister not ride bicycles in the park?",
+    options: { a: "It was raining.", b: "The bicycles were broken.", c: "There was a flower show.", d: "The park was too small." },
+    answer: "c"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_18", 
+    part: "reading",
+    question: "Passage:\nBen went to the city park with his sister on Sunday morning. They wanted to ride bicycles and have a picnic. When they arrived, they saw a sign near the gate. It said people could not ride bicycles in the park that day because there was a flower show. Ben and his sister put the bicycles near a tree and walked around the park instead. Later, they sat by the lake and ate sandwiches.\n\nWhy did they walk around the park?",
+    options: { a: "They forgot the bicycles at home.", b: "Riding bicycles was not allowed that day.", c: "They wanted to find the bus stop.", d: "They were waiting for their friends." },
+    answer: "b"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_19", 
+    part: "reading",
+    question: "Passage:\nBen went to the city park with his sister on Sunday morning. They wanted to ride bicycles and have a picnic. When they arrived, they saw a sign near the gate. It said people could not ride bicycles in the park that day because there was a flower show. Ben and his sister put the bicycles near a tree and walked around the park instead. Later, they sat by the lake and ate sandwiches.\n\nWhat did Ben and his sister do later?",
+    options: { a: "They had sandwiches by the lake.", b: "They bought flowers near the gate.", c: "They went home right away.", d: "They rode bicycles outside the park." },
+    answer: "a"
+  },
+  {
+    id: "2569 (กรณีพิเศษ)_20", 
+    part: "reading",
+    question: "Passage:\nBen went to the city park with his sister on Sunday morning. They wanted to ride bicycles and have a picnic. When they arrived, they saw a sign near the gate. It said people could not ride bicycles in the park that day because there was a flower show. Ben and his sister put the bicycles near a tree and walked around the park instead. Later, they sat by the lake and ate sandwiches.\n\nWhat should Ben and his sister do before entering the park on a busy day?",
+    options: { a: "ride faster than other people", b: "bring more food", c: "read the sign near the gate", d: "sit by the lake first" },
+    answer: "c"
+  }
+);
