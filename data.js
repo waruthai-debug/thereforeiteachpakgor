@@ -1415,6 +1415,7 @@ window.EXAM_DATABASE["2568"] = [
     options: { a: "Better grades", b: "More motivation", c: "Less deep learning", d: "More questions" },
     answer: "c"
   }
+  ];
 window.EXAM_DATABASE = window.EXAM_DATABASE || {};
 
 window.EXAM_DATABASE["2569"] = [
@@ -1558,5 +1559,5 @@ window.EXAM_DATABASE["2569"] = [
     options: { a: "ride faster than other people", b: "bring more food", c: "read the sign near the gate", d: "sit by the lake first" },
     answer: "c"
   }
-);
+];
 
